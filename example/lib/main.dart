@@ -6,14 +6,14 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
 import 'package:flutter_blue_example/widgets.dart';
+import 'package:flutter_blue_plugin/flutter_blue_plugin.dart';
 
 void main() {
-  runApp(FlutterBlueApp());
+  runApp(FlutterBluePlusApp());
 }
 
-class FlutterBlueApp extends StatelessWidget {
+class FlutterBluePlusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -54,7 +54,7 @@ class BluetoothOffScreen extends StatelessWidget {
               'Bluetooth Adapter is ${state != null ? state.toString().substring(15) : 'not available'}.',
               style: Theme.of(context)
                   .primaryTextTheme
-                  .subhead
+                  .subtitle2
                   ?.copyWith(color: Colors.white),
             ),
           ],
@@ -65,6 +65,23 @@ class BluetoothOffScreen extends StatelessWidget {
 }
 
 class FindDevicesScreen extends StatelessWidget {
+  final List<Guid> serviceIds = [
+    // Guid('4de5a20c-0001-ae02-bf63-0242ac130002'), //morpheus
+    // Guid('6e400001-b5a3-f393-e0a9-e50e24dcca9e'), //bStar
+    Guid('0d740001-d26f-4dbb-95e8-a4f5c55c57a9') //cmsn
+  ];
+
+  Future<void> _startScan() async {
+    await FlutterBlue.instance
+        .startScan(withServices: serviceIds, timeout: Duration(seconds: 300))
+        .drain();
+  }
+
+  Stream<List<ScanResult>> get onFoundDevices {
+    return FlutterBlue.instance.scanResults.map((event) =>
+        event.where((e) => e.advertisementData.localName.isNotEmpty).toList());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,8 +89,7 @@ class FindDevicesScreen extends StatelessWidget {
         title: Text('Find Devices'),
       ),
       body: RefreshIndicator(
-        onRefresh: () =>
-            FlutterBlue.instance.startScan(timeout: Duration(seconds: 4)),
+        onRefresh: () => _startScan(),
         child: SingleChildScrollView(
           child: Column(
             children: <Widget>[
@@ -92,7 +108,7 @@ class FindDevicesScreen extends StatelessWidget {
                               builder: (c, snapshot) {
                                 if (snapshot.data ==
                                     BluetoothDeviceState.connected) {
-                                  return RaisedButton(
+                                  return ElevatedButton(
                                     child: Text('OPEN'),
                                     onPressed: () => Navigator.of(context).push(
                                         MaterialPageRoute(
@@ -108,7 +124,7 @@ class FindDevicesScreen extends StatelessWidget {
                 ),
               ),
               StreamBuilder<List<ScanResult>>(
-                stream: FlutterBlue.instance.scanResults,
+                stream: onFoundDevices,
                 initialData: [],
                 builder: (c, snapshot) => Column(
                   children: snapshot.data!
@@ -141,9 +157,13 @@ class FindDevicesScreen extends StatelessWidget {
             );
           } else {
             return FloatingActionButton(
-                child: Icon(Icons.search),
-                onPressed: () => FlutterBlue.instance
-                    .startScan(timeout: Duration(seconds: 4)));
+              child: Icon(Icons.search),
+              onPressed: () async {
+                print('click scan');
+                await FlutterBlue.instance.requestEnableBluetooth();
+                await _startScan();
+              },
+            );
           }
         },
       ),
@@ -227,7 +247,7 @@ class DeviceScreen extends StatelessWidget {
                   text = snapshot.data.toString().substring(21).toUpperCase();
                   break;
               }
-              return FlatButton(
+              return ElevatedButton(
                   onPressed: onPressed,
                   child: Text(
                     text,
@@ -294,6 +314,7 @@ class DeviceScreen extends StatelessWidget {
               stream: device.services,
               initialData: [],
               builder: (c, snapshot) {
+                if (snapshot.data == null) return Text('Empty');
                 return Column(
                   children: _buildServiceTiles(snapshot.data!),
                 );

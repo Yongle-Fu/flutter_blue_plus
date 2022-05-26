@@ -2,7 +2,7 @@
 // All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-part of flutter_blue;
+part of flutter_blue_plugin;
 
 class BluetoothDescriptor {
   static final Guid cccd = new Guid("00002902-0000-1000-8000-00805f9b34fb");
@@ -15,7 +15,7 @@ class BluetoothDescriptor {
   BehaviorSubject<List<int>> _value;
   Stream<List<int>> get value => _value.stream;
 
-  List<int> get lastValue => _value.value ?? [];
+  List<int> get lastValue => _value.value;
 
   BluetoothDescriptor.fromProto(protos.BluetoothDescriptor p)
       : uuid = new Guid(p.uuid),
@@ -32,10 +32,10 @@ class BluetoothDescriptor {
       ..characteristicUuid = characteristicUuid.toString()
       ..serviceUuid = serviceUuid.toString();
 
-    await FlutterBlue.instance._channel
+    await FlutterBluePlugin.instance._channel
         .invokeMethod('readDescriptor', request.writeToBuffer());
 
-    return FlutterBlue.instance._methodStream
+    return FlutterBluePlugin.instance._methodStream
         .where((m) => m.method == "ReadDescriptorResponse")
         .map((m) => m.arguments)
         .map((buffer) => new protos.ReadDescriptorResponse.fromBuffer(buffer))
@@ -61,10 +61,10 @@ class BluetoothDescriptor {
       ..serviceUuid = serviceUuid.toString()
       ..value = value;
 
-    await FlutterBlue.instance._channel
+    await FlutterBluePlugin.instance._channel
         .invokeMethod('writeDescriptor', request.writeToBuffer());
 
-    return FlutterBlue.instance._methodStream
+    return FlutterBluePlugin.instance._methodStream
         .where((m) => m.method == "WriteDescriptorResponse")
         .map((m) => m.arguments)
         .map((buffer) => new protos.WriteDescriptorResponse.fromBuffer(buffer))

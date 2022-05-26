@@ -1,13 +1,15 @@
-[![pub package](https://img.shields.io/pub/v/flutter_blue.svg)](https://pub.dartlang.org/packages/flutter_blue)
+[![pub package](https://img.shields.io/pub/v/flutter_blue_plugin.svg)](https://pub.dartlang.org/packages/flutter_blue_plugin)
 [![Chat](https://img.shields.io/discord/634853295160033301.svg?style=flat-square&colorB=758ED3)](https://discord.gg/Yk5Efra)
 
 <br>
 <p align="center">
-<img alt="FlutterBlue" src="https://github.com/pauldemarco/flutter_blue/blob/master/site/flutterblue.png?raw=true" />
+<img alt="FlutterBlue" src="https://github.com/pauldemarco/flutter_blue_plugin/blob/master/site/flutterblue.png?raw=true" />
 </p>
 <br><br>
 
 ## Introduction
+
+fork from [flutter_blue_plugin](https://github.com/pauldemarco/flutter_blue_plugin)
 
 FlutterBlue is a bluetooth plugin for [Flutter](https://flutter.dev), a new app SDK to help developers build modern multi-platform apps.
 
@@ -21,7 +23,7 @@ This library is actively developed alongside production apps, and the API will e
 Having trouble adapting to the latest API?   I'd love to hear your use-case, please contact me.
 
 ## Cross-Platform Bluetooth LE
-FlutterBlue aims to offer the most from both platforms (iOS and Android).
+FlutterBlue aims to offer the most from both platforms (iOS and Android and Desktop).
 
 Using the FlutterBlue instance, you can scan for and connect to nearby devices ([BluetoothDevice](#bluetoothdevice-api)).
 Once connected to a device, the BluetoothDevice object can discover services ([BluetoothService](lib/src/bluetooth_service.dart)), characteristics ([BluetoothCharacteristic](lib/src/bluetooth_characteristic.dart)), and descriptors ([BluetoothDescriptor](lib/src/bluetooth_descriptor.dart)).
@@ -111,11 +113,11 @@ Note that iOS will not allow requests of MTU size, and will always try to negoti
 ## Getting Started
 ### Change the minSdkVersion for Android
 
-Flutter_blue is compatible only from version 19 of Android SDK so you should change this in **android/app/build.gradle**:
+flutter_blue_plugin is compatible only from version 19 of Android SDK so you should change this in **android/app/build.gradle**:
 ```dart
 Android {
   defaultConfig {
-     minSdkVersion: 19
+     minSdkVersion: 21
 ```
 ### Add permissions for Bluetooth
 We need to add the permission to use Bluetooth and access location:

@@ -360,6 +360,8 @@ class ConnectRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ConnectRequest', createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'remoteId')
     ..aOB(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'androidAutoConnect')
+    ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'connectionPriority', $pb.PbFieldType.O3)
+    ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'mtu', $pb.PbFieldType.O3)
     ..hasRequiredFields = false
   ;
 
@@ -367,6 +369,8 @@ class ConnectRequest extends $pb.GeneratedMessage {
   factory ConnectRequest({
     $core.String? remoteId,
     $core.bool? androidAutoConnect,
+    $core.int? connectionPriority,
+    $core.int? mtu,
   }) {
     final _result = create();
     if (remoteId != null) {
@@ -374,6 +378,12 @@ class ConnectRequest extends $pb.GeneratedMessage {
     }
     if (androidAutoConnect != null) {
       _result.androidAutoConnect = androidAutoConnect;
+    }
+    if (connectionPriority != null) {
+      _result.connectionPriority = connectionPriority;
+    }
+    if (mtu != null) {
+      _result.mtu = mtu;
     }
     return _result;
   }
@@ -415,6 +425,24 @@ class ConnectRequest extends $pb.GeneratedMessage {
   $core.bool hasAndroidAutoConnect() => $_has(1);
   @$pb.TagNumber(2)
   void clearAndroidAutoConnect() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get connectionPriority => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set connectionPriority($core.int v) { $_setSignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasConnectionPriority() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearConnectionPriority() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get mtu => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set mtu($core.int v) { $_setSignedInt32(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasMtu() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMtu() => clearField(4);
 }
 
 class BluetoothDevice extends $pb.GeneratedMessage {

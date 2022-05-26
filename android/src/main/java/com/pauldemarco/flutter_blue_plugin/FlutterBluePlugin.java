@@ -2,7 +2,7 @@
 // All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.pauldemarco.flutter_blue;
+package com.pauldemarco.flutter_blue_plugin;
 
 import android.app.Activity;
 import android.Manifest;
@@ -34,6 +34,7 @@ import android.util.Log;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.pauldemarco.flutter_blue.Protos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,7 +67,7 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
     private Object initializationLock = new Object();
     private Context context;
     private MethodChannel channel;
-    private static final String NAMESPACE = "plugins.pauldemarco.com/flutter_blue";
+    private static final String NAMESPACE = "plugins.pauldemarco.com/flutter_blue_plugin";
 
     private EventChannel stateChannel;
     private BluetoothManager mBluetoothManager;
@@ -643,7 +644,7 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
                 startScan(pendingCall, pendingResult);
             } else {
                 pendingResult.error(
-                        "no_permissions", "flutter_blue plugin requires location permissions for scanning", null);
+                        "no_permissions", "flutter_blue_plugin plugin requires location permissions for scanning", null);
                 pendingResult = null;
                 pendingCall = null;
             }

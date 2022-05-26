@@ -25,10 +25,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package com.pauldemarco.flutter_blue;
+package com.pauldemarco.flutter_blue_plugin;
 
 import com.google.protobuf.ByteString;
-import com.pauldemarco.flutter_blue.Protos.AdvertisementData;
+import com.pauldemarco.flutter_blue.Protos;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -41,15 +41,15 @@ import java.util.UUID;
 class AdvertisementParser {
 
   /**
-   * Parses packet data into {@link AdvertisementData} structure.
+   * Parses packet data into {@link Protos.AdvertisementData} structure.
    *
    * @param rawData The scan record data.
    * @return An AdvertisementData proto object.
    * @throws ArrayIndexOutOfBoundsException if the input is truncated.
    */
-  static AdvertisementData parse(byte[] rawData) {
+  static Protos.AdvertisementData parse(byte[] rawData) {
     ByteBuffer data = ByteBuffer.wrap(rawData).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
-    AdvertisementData.Builder ret = AdvertisementData.newBuilder();
+    Protos.AdvertisementData.Builder ret = Protos.AdvertisementData.newBuilder();
     boolean seenLongLocalName = false;
     do {
       int length = data.get() & 0xFF;

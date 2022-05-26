@@ -109,11 +109,13 @@ const ConnectRequest$json = const {
   '2': const [
     const {'1': 'remote_id', '3': 1, '4': 1, '5': 9, '10': 'remoteId'},
     const {'1': 'android_auto_connect', '3': 2, '4': 1, '5': 8, '10': 'androidAutoConnect'},
+    const {'1': 'connection_priority', '3': 3, '4': 1, '5': 5, '10': 'connectionPriority'},
+    const {'1': 'mtu', '3': 4, '4': 1, '5': 5, '10': 'mtu'},
   ],
 };
 
 /// Descriptor for `ConnectRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List connectRequestDescriptor = $convert.base64Decode('Cg5Db25uZWN0UmVxdWVzdBIbCglyZW1vdGVfaWQYASABKAlSCHJlbW90ZUlkEjAKFGFuZHJvaWRfYXV0b19jb25uZWN0GAIgASgIUhJhbmRyb2lkQXV0b0Nvbm5lY3Q=');
+final $typed_data.Uint8List connectRequestDescriptor = $convert.base64Decode('Cg5Db25uZWN0UmVxdWVzdBIbCglyZW1vdGVfaWQYASABKAlSCHJlbW90ZUlkEjAKFGFuZHJvaWRfYXV0b19jb25uZWN0GAIgASgIUhJhbmRyb2lkQXV0b0Nvbm5lY3QSLwoTY29ubmVjdGlvbl9wcmlvcml0eRgDIAEoBVISY29ubmVjdGlvblByaW9yaXR5EhAKA210dRgEIAEoBVIDbXR1');
 @$core.Deprecated('Use bluetoothDeviceDescriptor instead')
 const BluetoothDevice$json = const {
   '1': 'BluetoothDevice',

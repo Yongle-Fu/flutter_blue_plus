@@ -53,6 +53,8 @@ message ScanResult {
 message ConnectRequest {
   string remote_id = 1;
   bool android_auto_connect = 2;
+  int32 connection_priority = 3;
+  int32 mtu = 4;
 }
 
 message BluetoothDevice {

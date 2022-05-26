@@ -9,7 +9,7 @@
 #endif
 #import <CoreBluetooth/CoreBluetooth.h>
 
-#define NAMESPACE @"plugins.pauldemarco.com/flutter_blue"
+#define NAMESPACE @"plugins.pauldemarco.com/flutter_blue_plugin"
 
 @interface FlutterBluePlugin : NSObject<FlutterPlugin, CBCentralManagerDelegate, CBPeripheralDelegate>
 @end

@@ -1,102 +1,81 @@
-// Copyright 2017, Paul DeMarco.
-// All rights reserved. Use of this source code is governed by a
-// BSD-style license that can be found in the LICENSE file.
-
-part of flutter_blue;
+part of flutter_blue_plugin;
 
 class FlutterBlue {
-  final MethodChannel _channel = const MethodChannel('$NAMESPACE/methods');
-  final EventChannel _stateChannel = const EventChannel('$NAMESPACE/state');
-  final StreamController<MethodCall> _methodStreamController =
-      new StreamController.broadcast(); // ignore: close_sinks
-  Stream<MethodCall> get _methodStream => _methodStreamController
-      .stream; // Used internally to dispatch methods from platform.
-
-  /// Singleton boilerplate
-  FlutterBlue._() {
-    _channel.setMethodCallHandler((MethodCall call) async {
-      _methodStreamController.add(call);
-    });
-
-    _setLogLevelIfAvailable();
-  }
-
-  static FlutterBlue _instance = new FlutterBlue._();
+  static FlutterBlue _instance = FlutterBlue();
   static FlutterBlue get instance => _instance;
 
-  /// Log level of the instance, default is all messages (debug).
-  LogLevel _logLevel = LogLevel.debug;
-  LogLevel get logLevel => _logLevel;
-
   /// Checks whether the device supports Bluetooth
-  Future<bool> get isAvailable =>
-      _channel.invokeMethod('isAvailable').then<bool>((d) => d);
+  Future<bool> get isAvailable {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance.isAvailable;
+    }
+    return FlutterBluePlus.isBluetoothAvailable();
+  }
 
   /// Checks if Bluetooth functionality is turned on
-  Future<bool> get isOn => _channel.invokeMethod('isOn').then<bool>((d) => d);
+  Future<bool> get isOn {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance.isOn;
+    }
+    return FlutterBluePlus.isBluetoothAvailable();
+  }
 
-  BehaviorSubject<bool> _isScanning = BehaviorSubject.seeded(false);
-  Stream<bool> get isScanning => _isScanning.stream;
+  Future<void> requestEnableBluetooth() async {
+    if (Platform.isAndroid) {
+      await FlutterBluePlugin.instance.requestEnableBluetooth();
+    }
+  }
 
   BehaviorSubject<List<ScanResult>> _scanResults = BehaviorSubject.seeded([]);
-
-  /// Returns a stream that is a list of [ScanResult] results while a scan is in progress.
-  ///
-  /// The list emitted is all the scanned results as of the last initiated scan. When a scan is
-  /// first started, an empty list is emitted. The returned stream is never closed.
-  ///
-  /// One use for [scanResults] is as the stream in a StreamBuilder to display the
-  /// results of a scan in real time while the scan is in progress.
-  Stream<List<ScanResult>> get scanResults => _scanResults.stream;
-
-  PublishSubject _stopScanPill = new PublishSubject();
+  Stream<List<ScanResult>> get scanResults {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance.scanResults;
+    }
+    return _scanResults.stream;
+  }
 
   /// Gets the current state of the Bluetooth module
   Stream<BluetoothState> get state async* {
-    yield await _channel
-        .invokeMethod('state')
-        .then((buffer) => new protos.BluetoothState.fromBuffer(buffer))
-        .then((s) => BluetoothState.values[s.state.value]);
-
-    yield* _stateChannel
-        .receiveBroadcastStream()
-        .map((buffer) => new protos.BluetoothState.fromBuffer(buffer))
-        .map((s) => BluetoothState.values[s.state.value]);
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      yield* FlutterBluePlugin.instance.state;
+      return;
+    }
+    yield BluetoothState.on;
   }
 
   /// Retrieve a list of connected devices
   Future<List<BluetoothDevice>> get connectedDevices {
-    return _channel
-        .invokeMethod('getConnectedDevices')
-        .then((buffer) => protos.ConnectedDevicesResponse.fromBuffer(buffer))
-        .then((p) => p.devices)
-        .then((p) => p.map((d) => BluetoothDevice.fromProto(d)).toList());
-  }
-
-  _setLogLevelIfAvailable() async {
-    if (await isAvailable) {
-      // Send the log level to the underlying platforms.
-      setLogLevel(logLevel);
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance.connectedDevices;
     }
+    return Future.value([]);
   }
 
-  /// Starts a scan for Bluetooth Low Energy devices and returns a stream
-  /// of the [ScanResult] results as they are received.
-  ///
-  /// timeout calls stopStream after a specified [Duration].
-  /// You can also get a list of ongoing results in the [scanResults] stream.
-  /// If scanning is already in progress, this will throw an [Exception].
-  Stream<ScanResult> scan({
+  PublishSubject _stopScanPill = new PublishSubject();
+  BehaviorSubject<bool> _isScanning = BehaviorSubject.seeded(false);
+  Stream<bool> get isScanning {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance.isScanning;
+    }
+    return _isScanning.stream;
+  }
+
+  Stream<ScanResult> startScan({
     ScanMode scanMode = ScanMode.lowLatency,
     List<Guid> withServices = const [],
     List<Guid> withDevices = const [],
     Duration? timeout,
     bool allowDuplicates = false,
   }) async* {
-    var settings = protos.ScanSettings.create()
-      ..androidScanMode = scanMode.value
-      ..allowDuplicates = allowDuplicates
-      ..serviceUuids.addAll(withServices.map((g) => g.toString()).toList());
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      yield* FlutterBluePlugin.instance.scan(
+          scanMode: scanMode,
+          withServices: withServices,
+          withDevices: withDevices,
+          timeout: timeout,
+          allowDuplicates: allowDuplicates);
+      return;
+    }
 
     if (_isScanning.value == true) {
       throw Exception('Another scan is already in progress.');
@@ -115,7 +94,10 @@ class FlutterBlue {
     _scanResults.add(<ScanResult>[]);
 
     try {
-      await _channel.invokeMethod('startScan', settings.writeToBuffer());
+      print('starting scan.');
+      FlutterBluePlus.startScan(
+          serviceUuid:
+              withServices.isNotEmpty ? withServices.first.toString() : '');
     } catch (e) {
       print('Error starting scan.');
       _stopScanPill.add(null);
@@ -123,17 +105,13 @@ class FlutterBlue {
       throw e;
     }
 
-    yield* FlutterBlue.instance._methodStream
-        .where((m) => m.method == "ScanResult")
-        .map((m) => m.arguments)
-        .takeUntil(Rx.merge(killStreams))
-        .doOnDone(stopScan)
-        .map((buffer) => new protos.ScanResult.fromBuffer(buffer))
-        .map((p) {
-      final result = new ScanResult.fromProto(p);
-      final list = _scanResults.value ?? [];
+    yield* FlutterBluePlus.scanResultStream
+        .map((r) => ScanResult.fromBlueScanResult(r))
+        .map((result) {
+      final list = _scanResults.value;
       int index = list.indexOf(result);
       if (index != -1) {
+        result.timestamp = DateTime.now().millisecondsSinceEpoch;
         list[index] = result;
       } else {
         list.add(result);
@@ -143,154 +121,153 @@ class FlutterBlue {
     });
   }
 
-  /// Starts a scan and returns a future that will complete once the scan has finished.
-  ///
-  /// Once a scan is started, call [stopScan] to stop the scan and complete the returned future.
-  ///
-  /// timeout automatically stops the scan after a specified [Duration].
-  ///
-  /// To observe the results while the scan is in progress, listen to the [scanResults] stream,
-  /// or call [scan] instead.
-  Future startScan({
-    ScanMode scanMode = ScanMode.lowLatency,
-    List<Guid> withServices = const [],
-    List<Guid> withDevices = const [],
-    Duration? timeout,
-    bool allowDuplicates = false,
-  }) async {
-    await scan(
-            scanMode: scanMode,
-            withServices: withServices,
-            withDevices: withDevices,
-            timeout: timeout,
-            allowDuplicates: allowDuplicates)
-        .drain();
-    return _scanResults.value;
-  }
-
   /// Stops a scan for Bluetooth Low Energy devices
   Future stopScan() async {
-    await _channel.invokeMethod('stopScan');
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      await FlutterBluePlugin.instance.stopScan();
+      return;
+    }
+
+    FlutterBluePlus.stopScan();
     _stopScanPill.add(null);
     _isScanning.add(false);
   }
 
-  /// The list of connected peripherals can include those that are connected
-  /// by other apps and that will need to be connected locally using the
-  /// device.connect() method before they can be used.
-//  Stream<List<BluetoothDevice>> connectedDevices({
-//    List<Guid> withServices = const [],
-//  }) =>
-//      throw UnimplementedError();
+  // Future setUseHardwareFiltering(bool enabled) async {
+  //   if (Platform.isAndroid) {
+  //     FlutterBlue.instance.setUseHardwareFiltering(enabled);
+  //     return;
+  //   }
+  // }
 
-  /// Sets the log level of the FlutterBlue instance
-  /// Messages equal or below the log level specified are stored/forwarded,
-  /// messages above are dropped.
-  void setLogLevel(LogLevel level) async {
-    await _channel.invokeMethod('setLogLevel', level.index);
+  // Future setDataStreamUuid(
+  //     String serverUuid, String txUuid, String rxUuid) async {
+  //   if (kIsWeb) return;
+  //   if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+  //     FlutterBlue.instance.setDataStreamUuid(serverUuid, txUuid, rxUuid);
+  //     return;
+  //   }
+  // }
+
+  /// Log level of the instance, default is all messages (info).
+  LogLevel _logLevel = LogLevel.info;
+  LogLevel get logLevel => _logLevel;
+  Future setLogLevel(LogLevel level) async {
     _logLevel = level;
-  }
-
-  void _log(LogLevel level, String message) {
-    if (level.index <= _logLevel.index) {
-      print(message);
+    if (!Platform.isWindows) {
+      FlutterBluePlugin.instance.setLogLevel(level);
+      return;
     }
   }
-}
 
-/// Log levels for FlutterBlue
-enum LogLevel {
-  emergency,
-  alert,
-  critical,
-  error,
-  warning,
-  notice,
-  info,
-  debug,
-}
+  StreamController<String>? _logRecordController;
+  Stream<String> get onLogRecord => _onLogRecord;
+  Stream<String> get _onLogRecord {
+    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
+      return FlutterBluePlugin.instance._onLogRecord;
+    }
 
-/// State of the bluetooth adapter.
-enum BluetoothState {
-  unknown,
-  unavailable,
-  unauthorized,
-  turningOn,
-  on,
-  turningOff,
-  off
-}
+    if (_logRecordController == null) {
+      _logRecordController = StreamController.broadcast();
+    }
+    return _logRecordController!.stream;
+  }
 
-class ScanMode {
-  const ScanMode(this.value);
-  static const lowPower = const ScanMode(0);
-  static const balanced = const ScanMode(1);
-  static const lowLatency = const ScanMode(2);
-  static const opportunistic = const ScanMode(-1);
-  final int value;
-}
+  void log(String message, {LogLevel level = LogLevel.info}) {
+    if (level.index <= _logLevel.index) {
+      _logRecordController?.add(message);
+    }
+  }
 
-class DeviceIdentifier {
-  final String id;
-  const DeviceIdentifier(this.id);
+  StreamSubscription? _pairedDevicesSubscription;
+  Map<String, BluetoothDevice> _pairedDevices = {};
+  StreamController<DeviceWatcherStatus>? _watcherStatusController;
+  DeviceWatcherStatus _watcherStatus = DeviceWatcherStatus.created;
+  Future<void> _startScanPairedDevices() async {
+    _pairedDevicesSubscription ??=
+        FlutterBluePlus.pairedDevicesStream.listen((map) async {
+      //log(map.toString());
+      final status = map['status'];
+      if (status is int && status < DeviceWatcherStatus.values.length) {
+        final watcherStatus = DeviceWatcherStatus.values[status];
+        _watcherStatus = watcherStatus;
+        if (watcherStatus == DeviceWatcherStatus.started) {
+          final deviceId = map['deviceId'];
+          if (deviceId is String && deviceId.isNotEmpty) {
+            final isConnected = map['isConnected'];
+            if (isConnected is! bool) return;
 
-  @override
-  String toString() => id;
+            final name = map['name'];
+            if (name is String && name.isNotEmpty) {
+              final address = map['address'];
+              if (!_pairedDevices.containsKey(deviceId) && address is int) {
+                if (name.contains('Morpheus')) log(map.toString());
+                final device = BluetoothDevice(
+                    DeviceIdentifier(address.toString()),
+                    name,
+                    BluetoothDeviceType.classic);
+                device.setIsConnected(isConnected);
+                _pairedDevices[deviceId] = device;
+              }
+            } else {
+              final device = _pairedDevices[deviceId];
+              if (device != null) {
+                device.setIsConnected(isConnected);
+              }
+            }
+          }
+        } else if (watcherStatus == DeviceWatcherStatus.enumerationCompleted) {
+          await FlutterBluePlus.stopScanPairedDevices();
+          _pairedDevicesSubscription?.cancel();
+          _pairedDevicesSubscription = null;
+        }
+        _watcherStatusController?.add(watcherStatus);
+      }
+    });
+    _watcherStatusController ??= StreamController.broadcast();
+    _pairedDevices.clear();
+    await FlutterBluePlus.startScanPairedDevices();
+    await _watcherStatusController!.stream
+        .firstWhere((e) => e == DeviceWatcherStatus.enumerationCompleted)
+        .timeout(Duration(seconds: 2));
+  }
 
-  @override
-  int get hashCode => id.hashCode;
+  Future<List<BluetoothDevice>> get a2dpConnectedDevices async {
+    if (kIsWeb) return [];
+    if (Platform.isWindows) {
+      if (_watcherStatusController == null ||
+          _watcherStatus == DeviceWatcherStatus.aborted ||
+          _watcherStatus == DeviceWatcherStatus.stopped)
+        await _startScanPairedDevices();
 
-  @override
-  bool operator ==(other) =>
-      other is DeviceIdentifier && compareAsciiLowerCase(id, other.id) == 0;
-}
+      return _pairedDevices.values
+          .where((e) => e.deviceState == BluetoothDeviceState.connected)
+          .toList();
+    }
+    return FlutterBluePlugin.instance.a2dpConnectedDevices;
+  }
 
-class ScanResult {
-  ScanResult.fromProto(protos.ScanResult p)
-      : device = new BluetoothDevice.fromProto(p.device),
-        advertisementData =
-            new AdvertisementData.fromProto(p.advertisementData),
-        rssi = p.rssi;
+  Future<void> requestMtu(String deviceId, int mtu) async {
+    if (!Platform.isWindows) return;
+    final ret = await FlutterBluePlus.requestMtu(deviceId, mtu);
+    log('requestMtu, ret=$ret');
+  }
 
-  final BluetoothDevice device;
-  final AdvertisementData advertisementData;
-  final int rssi;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ScanResult &&
-          runtimeType == other.runtimeType &&
-          device == other.device;
-
-  @override
-  int get hashCode => device.hashCode;
-
-  @override
-  String toString() {
-    return 'ScanResult{device: $device, advertisementData: $advertisementData, rssi: $rssi}';
+  dispose() {
+    _watcherStatusController?.close();
+    _watcherStatusController = null;
+    _logRecordController?.close();
+    _logRecordController = null;
+    _pairedDevicesSubscription?.cancel();
+    _pairedDevicesSubscription = null;
   }
 }
 
-class AdvertisementData {
-  final String localName;
-  final int? txPowerLevel;
-  final bool connectable;
-  final Map<int, List<int>> manufacturerData;
-  final Map<String, List<int>> serviceData;
-  final List<String> serviceUuids;
-
-  AdvertisementData.fromProto(protos.AdvertisementData p)
-      : localName = p.localName,
-        txPowerLevel =
-            (p.txPowerLevel.hasValue()) ? p.txPowerLevel.value : null,
-        connectable = p.connectable,
-        manufacturerData = p.manufacturerData,
-        serviceData = p.serviceData,
-        serviceUuids = p.serviceUuids;
-
-  @override
-  String toString() {
-    return 'AdvertisementData{localName: $localName, txPowerLevel: $txPowerLevel, connectable: $connectable, manufacturerData: $manufacturerData, serviceData: $serviceData, serviceUuids: $serviceUuids}';
-  }
+enum DeviceWatcherStatus {
+  created,
+  started,
+  enumerationCompleted,
+  stopping,
+  stopped,
+  aborted
 }
