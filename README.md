@@ -1,15 +1,15 @@
-[![pub package](https://img.shields.io/pub/v/flutter_blue_plugin.svg)](https://pub.dartlang.org/packages/flutter_blue_plugin)
+[![pub package](https://img.shields.io/pub/v/flutter_blue.svg)](https://pub.dartlang.org/packages/flutter_blue_plugin)
 [![Chat](https://img.shields.io/discord/634853295160033301.svg?style=flat-square&colorB=758ED3)](https://discord.gg/Yk5Efra)
 
 <br>
 <p align="center">
-<img alt="FlutterBlue" src="https://github.com/pauldemarco/flutter_blue_plugin/blob/master/site/flutterblue.png?raw=true" />
+<img alt="FlutterBlue" src="https://github.com/pauldemarco/flutter_blue/blob/master/site/flutterblue.png?raw=true" />
 </p>
 <br><br>
 
 ## Introduction
 
-fork from [flutter_blue_plugin](https://github.com/pauldemarco/flutter_blue_plugin)
+fork from [flutter_blue](https://github.com/pauldemarco/flutter_blue)
 
 FlutterBlue is a bluetooth plugin for [Flutter](https://flutter.dev), a new app SDK to help developers build modern multi-platform apps.
 
@@ -113,7 +113,7 @@ Note that iOS will not allow requests of MTU size, and will always try to negoti
 ## Getting Started
 ### Change the minSdkVersion for Android
 
-flutter_blue_plugin is compatible only from version 19 of Android SDK so you should change this in **android/app/build.gradle**:
+flutter_blue_plugin is compatible only from version 21 of Android SDK so you should change this in **android/app/build.gradle**:
 ```dart
 Android {
   defaultConfig {
@@ -126,9 +126,13 @@ We need to add the permission to use Bluetooth and access location:
 In the **android/app/src/main/AndroidManifest.xml** let’s add:
 
 ```xml 
-	 <uses-permission android:name="android.permission.BLUETOOTH" />  
-	 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />  
-	 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>  
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
  <application
 ```
 #### **IOS**

@@ -4,6 +4,7 @@
 
 package com.pauldemarco.flutter_blue_plugin;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -29,6 +30,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
 
@@ -37,9 +40,11 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.pauldemarco.flutter_blue.Protos;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import androidx.core.app.ActivityCompat;
@@ -66,8 +71,9 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
     private static final String TAG = "FlutterBluePlugin";
     private Object initializationLock = new Object();
     private Context context;
-    private MethodChannel channel;
+    private static  MethodChannel channel;
     private static final String NAMESPACE = "plugins.pauldemarco.com/flutter_blue_plugin";
+    private static final Handler handler = new Handler(Looper.getMainLooper());
 
     private EventChannel stateChannel;
     private BluetoothManager mBluetoothManager;
@@ -81,7 +87,7 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
     private static final int REQUEST_FINE_LOCATION_PERMISSIONS = 1452;
     static final private UUID CCCD_ID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
     private final Map<String, BluetoothDeviceCache> mDevices = new HashMap<>();
-    private LogLevel logLevel = LogLevel.EMERGENCY;
+    private static LogLevel logLevel = LogLevel.EMERGENCY;
 
     // Pending call and result for startScan, in the case where permissions are needed
     private MethodCall pendingCall;
@@ -237,6 +243,15 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
                 break;
             }
 
+            case "requestEnableBluetooth": {
+                if (activityBinding != null && !mBluetoothAdapter.isEnabled()) {
+                    Intent open = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    activityBinding.getActivity().startActivity(open, null);
+                }
+                result.success(true);
+                break;
+            }
+
             case "startScan":
             {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -262,15 +277,56 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
                 break;
             }
 
-            case "getConnectedDevices":
-            {
-                List<BluetoothDevice> devices = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+//            case "getA2dpConnectedDevices": {
+//                Protos.ConnectedDevicesResponse.Builder p = Protos.ConnectedDevicesResponse.newBuilder();
+//                if (mA2dpService != null) {
+//                    List<BluetoothDevice> devices = mA2dpService.getConnectedDevices();
+//                    onLogRecord("getA2dpConnectedDevices size=" + devices.size());
+//                    for (BluetoothDevice d : devices) {
+//                        p.addDevices(ProtoMaker.from(d));
+//                    }
+//                } else {
+//                    Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
+//                    onLogRecord("getA2dpConnectedDevices, bondedDevices size=" + bondedDevices.size());
+//                    for (BluetoothDevice d : bondedDevices) {
+//                        try {
+//                            Method m = d.getClass().getMethod("isConnected");
+//                            boolean isConnected = (boolean)m.invoke(d);
+//                            if (!isConnected) continue;
+//                        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+//                            e.printStackTrace();
+//                        }
+//                        p.addDevices(ProtoMaker.from(d));
+//                    }
+//                }
+//                result.success(p.build().toByteArray());
+//                break;
+//            }
+
+            case "getBondedDevices": {
+                Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
+                onLogRecord("bondedDevices size=" + bondedDevices.size());
+
                 Protos.ConnectedDevicesResponse.Builder p = Protos.ConnectedDevicesResponse.newBuilder();
-                for(BluetoothDevice d : devices) {
+                for (BluetoothDevice d : bondedDevices) {
+                    if (!d.getName().startsWith("LE-Morpheus")) continue;
                     p.addDevices(ProtoMaker.from(d));
                 }
                 result.success(p.build().toByteArray());
-                log(LogLevel.EMERGENCY, "mDevices size: " + mDevices.size());
+                break;
+            }
+
+            case "getConnectedDevices": {
+                Protos.ConnectedDevicesResponse.Builder p = Protos.ConnectedDevicesResponse.newBuilder();
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                        (context != null && ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)) {
+                    List<BluetoothDevice> devices = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
+                    onLogLevelRecord(LogLevel.DEBUG, "getConnectedDevices size: " + devices.size());
+                    for (BluetoothDevice d : devices) {
+                        p.addDevices(ProtoMaker.from(d));
+                    }
+                }
+                result.success(p.build().toByteArray());
                 break;
             }
 
@@ -994,12 +1050,27 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
         }
     }
 
+    public static void onLogRecord(final String message) {
+        onLogLevelRecord(LogLevel.INFO, message);
+    }
+
+    @SuppressLint("DefaultLocale")
+    public static void onLogLevelRecord(LogLevel level, final String message) {
+        if (logLevel.ordinal() >= level.ordinal()) {
+            handler.post(
+                    () -> {
+                        if (channel != null) {
+                            channel.invokeMethod("onLogRecord", String.format("%tT [%s] %s", new Date(), TAG, message));
+                        }
+                    });
+        }
+    }
+
     private void invokeMethodUIThread(final String name, final byte[] byteArray)
     {
-        activity.runOnUiThread(
-                new Runnable() {
-                    @Override
-                    public void run() {
+        handler.post(
+                () -> {
+                    if (channel != null) {
                         channel.invokeMethod(name, byteArray);
                     }
                 });

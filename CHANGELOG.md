@@ -1,7 +1,8 @@
-#
+## 0.9.2 - [2022-05-27]
+* update README
+
 ## 0.9.0 - [2022-05-27]
 * Add Windows support, use quick_ble windows implements
-* TODO: Android 12 support
 
 ## 0.8.0
 * Migrate the plugin to null safety.

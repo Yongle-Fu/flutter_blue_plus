@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.description      = <<-DESC
 Bluetooth Low Energy plugin for Flutter.
                        DESC
-  s.homepage         = 'https://github.com/pauldemarco/flutter_blue_plugin'
+  s.homepage         = 'https://github.com/Yongle-Fu/flutter_blue_plus'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Paul DeMarco' => 'paulmdemarco@gmail.com' }
   s.source           = { :path => '.' }
